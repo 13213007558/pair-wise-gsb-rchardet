@@ -48,6 +48,7 @@ require 'rchardet/latin1prober'
 
 require 'rchardet/mbcsgroupprober'
 require 'rchardet/mbcssm'
+require 'rchardet/sbcsmodeltrainer'
 require 'rchardet/sbcharsetprober'
 require 'rchardet/sbcsgroupprober'
 require 'rchardet/sjisprober'

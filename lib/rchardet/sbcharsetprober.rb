@@ -38,6 +38,8 @@ module CharDet
   #NEGATIVE_CAT = 0
 
   class SingleByteCharSetProber < CharSetProber
+    attr_reader :seqCounters, :totalSeqs, :totalChar, :freqChar, :lastOrder
+
     def initialize(model, reversed=false, nameProber=nil)
       super()
       @model = model

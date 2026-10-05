@@ -54,6 +54,8 @@ require 'rchardet/sjisprober'
 require 'rchardet/universaldetector'
 require 'rchardet/utf8prober'
 require 'rchardet/utf1632prober'
+require 'rchardet/statesnapshot'
+require 'rchardet/probersnapshot'
 
 module CharDet
   def CharDet.detect(aBuf)

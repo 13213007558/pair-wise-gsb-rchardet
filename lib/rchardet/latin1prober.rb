@@ -92,6 +92,7 @@ module CharDet
   ].freeze
 
   class Latin1Prober < CharSetProber
+    attr_reader :lastCharClass, :freqCounter
     def initialize
       super
       reset()
@@ -142,6 +143,10 @@ module CharDet
       # can take priority.
       confidence = confidence * 0.5
       return confidence
+    end
+
+    def restore_from_snapshot(data)
+      StateSnapshot.restore_latin1(self, data)
     end
   end
 end

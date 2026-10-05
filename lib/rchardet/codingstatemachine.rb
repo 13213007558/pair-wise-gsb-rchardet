@@ -29,6 +29,7 @@
 module CharDet
   class CodingStateMachine
     attr_accessor :active
+    attr_reader :model
 
     def initialize(sm)
       @model = sm
@@ -62,6 +63,23 @@ module CharDet
 
     def get_coding_state_machine
       return @model['name']
+    end
+
+    def snapshot_state
+      {
+        'model' => @model['name'],
+        'state' => @currentState,
+        'bytePos' => @currentBytePos,
+        'charLen' => @currentCharLen,
+        'active' => @active.nil? ? true : @active,
+      }
+    end
+
+    def restore_state(data)
+      @currentState = data['state']
+      @currentBytePos = data['bytePos']
+      @currentCharLen = data['charLen']
+      @active = data['active']
     end
   end
 end

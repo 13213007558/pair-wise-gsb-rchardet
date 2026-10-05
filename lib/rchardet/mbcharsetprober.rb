@@ -30,6 +30,7 @@
 
 module CharDet
   class MultiByteCharSetProber < CharSetProber
+    attr_reader :codingSM, :distributionAnalyzer, :contextAnalyzer, :lastChar
     def initialize
       super
       @distributionAnalyzer = nil
@@ -84,6 +85,14 @@ module CharDet
 
     def get_confidence
       return @distributionAnalyzer.get_confidence()
+    end
+
+    def restore_from_snapshot(data)
+      type = self.class.name.split('::').last
+      model = StateSnapshot::MBCS_MODEL_NAMES.fetch(type) do
+        raise SnapshotError, "unknown multi byte prober #{type}"
+      end
+      StateSnapshot.restore_mbcs(self, data, model)
     end
   end
 end

@@ -124,6 +124,42 @@ module CharDet
 
     private
 
+    public
+
+    def snapshot_counters
+      {
+        'position' => @position,
+        'zerosAtMod' => @zeros_at_mod.dup,
+        'nonzerosAtMod' => @nonzeros_at_mod.dup,
+        'quad' => @quad.dup,
+        'invalidUtf16be' => @invalid_utf16be,
+        'invalidUtf16le' => @invalid_utf16le,
+        'invalidUtf32be' => @invalid_utf32be,
+        'invalidUtf32le' => @invalid_utf32le,
+        'firstHalf16be' => @first_half_surrogate_pair_detected_16be,
+        'firstHalf16le' => @first_half_surrogate_pair_detected_16le,
+      }
+    end
+
+    def restore_counters(position, zeros, nonzeros, quad, flags)
+      @position = position
+      @zeros_at_mod = zeros
+      @nonzeros_at_mod = nonzeros
+      @quad = quad
+      @invalid_utf16be = flags['invalidUtf16be']
+      @invalid_utf16le = flags['invalidUtf16le']
+      @invalid_utf32be = flags['invalidUtf32be']
+      @invalid_utf32le = flags['invalidUtf32le']
+      @first_half_surrogate_pair_detected_16be = flags['firstHalf16be']
+      @first_half_surrogate_pair_detected_16le = flags['firstHalf16le']
+    end
+
+    def restore_from_snapshot(data)
+      StateSnapshot.restore_utf1632(self, data)
+    end
+
+    private
+
     def approx_32bit_chars
       return [1.0, @position / 4.0].max
     end

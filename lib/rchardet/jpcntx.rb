@@ -120,6 +120,11 @@ module CharDet
   ].freeze
 
   class JapaneseContextAnalysis
+    attr_reader :totalRel, :relSample, :needToSkipCharNum, :lastCharOrder
+
+    def done?
+      @done
+    end
     def initialize
       reset()
     end

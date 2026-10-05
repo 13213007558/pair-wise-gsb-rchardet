@@ -38,6 +38,12 @@ module CharDet
   #NEGATIVE_CAT = 0
 
   class SingleByteCharSetProber < CharSetProber
+    attr_reader :model, :reversed, :nameProber, :lastOrder, :seqCounters,
+                :totalSeqs, :totalChar, :freqChar
+
+    def model_name
+      @model['charsetName']
+    end
     def initialize(model, reversed=false, nameProber=nil)
       super()
       @model = model
@@ -117,6 +123,14 @@ module CharDet
         end
       end
       return r
+    end
+
+    def reversed?
+      @reversed
+    end
+
+    def restore_from_snapshot(data)
+      StateSnapshot.restore_sbcs(self, data)
     end
   end
 end

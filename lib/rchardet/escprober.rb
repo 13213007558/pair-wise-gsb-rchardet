@@ -28,6 +28,8 @@
 
 module CharDet
   class EscCharSetProber < CharSetProber
+    attr_reader :codingSM, :activeSM, :detectedCharset
+    alias machines codingSM
     def initialize
       super()
       @codingSM = [ 
@@ -85,6 +87,10 @@ module CharDet
       end
 
       return get_state()
+    end
+
+    def restore_from_snapshot(data)
+      StateSnapshot.restore_esc(self, data)
     end
   end
 end

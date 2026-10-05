@@ -66,5 +66,10 @@ module CharDet
       # TODO
       return aBuf
     end
+
+    # Install validated snapshot state. Overridden by concrete probers.
+    def restore_from_snapshot(data)
+      StateSnapshot.restore_common_state(self, data)
+    end
   end
 end

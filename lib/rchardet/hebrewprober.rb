@@ -148,6 +148,8 @@ module CharDet
   LOGICAL_HEBREW_NAME = "windows-1255"
 
   class HebrewProber < CharSetProber
+    attr_reader :finalCharLogicalScore, :finalCharVisualScore, :prev,
+                :beforePrev
     def initialize
       super()
       @logicalProber = nil
@@ -284,6 +286,10 @@ module CharDet
         return ENotMe
       end
       return EDetecting
+    end
+
+    def restore_from_snapshot(data)
+      StateSnapshot.restore_hebrew(self, data)
     end
   end
 end

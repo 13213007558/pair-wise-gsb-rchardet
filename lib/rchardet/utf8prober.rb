@@ -30,6 +30,7 @@ module CharDet
   ONE_CHAR_PROB = 0.5
 
   class UTF8Prober < CharSetProber
+    attr_reader :codingSM, :numOfMBChar
     def initialize
       super()
       @codingSM = CodingStateMachine.new(UTF8SMModel)
@@ -80,6 +81,10 @@ module CharDet
       else
         return unlike
       end
+    end
+
+    def restore_from_snapshot(data)
+      StateSnapshot.restore_utf8(self, data)
     end
   end
 end

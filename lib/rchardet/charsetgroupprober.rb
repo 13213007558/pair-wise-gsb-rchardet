@@ -29,6 +29,7 @@
 module CharDet
   class CharSetGroupProber < CharSetProber
     attr_accessor :probers
+    attr_reader :activeNum, :bestGuessProber
     def initialize
       super
       @activeNum = 0
@@ -105,6 +106,10 @@ module CharDet
       end
       return 0.0 unless @bestGuessProber
       return bestConf
+    end
+
+    def restore_from_snapshot(data)
+      StateSnapshot.restore_group(self, data)
     end
   end
 end

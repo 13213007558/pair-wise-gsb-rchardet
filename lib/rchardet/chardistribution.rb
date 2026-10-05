@@ -32,6 +32,7 @@ module CharDet
   SURE_NO = 0.01
 
   class CharDistributionAnalysis
+    attr_reader :totalChars, :freqChars
     def initialize
       @charToFreqOrder = nil # Mapping table to get frequency order from char order (get from GetOrder())
       @tableSize = nil # Size of above table

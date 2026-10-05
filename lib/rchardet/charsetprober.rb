@@ -44,12 +44,35 @@ module CharDet
     def feed(aBuf)
     end
 
+    # Feed a chunk while optionally replaying one raw byte from the end of
+    # the previous chunk. Probers whose statistics pair bytes implement this
+    # to stay equivalent to a single continuous buffer.
+    def feed_with_replay(aBuf, _replay_byte, _ends_letter_run = false)
+      feed(aBuf)
+    end
+
+    # First chunk containing a high byte. filtered_prefix is the filtered
+    # pure-ASCII prefix already seen (it must not be double counted).
+    def feed_first_highbyte(aBuf, _high_index, _filtered_prefix, _prefix_ends_raw_letter = false)
+      feed(aBuf)
+    end
+
     def get_state
       return @state
     end
 
     def get_confidence
       return 0.0
+    end
+
+    # Default snapshot: only the prober decision state.
+    def snapshot_state
+      {"state" => @state}
+    end
+
+    def restore_state(state)
+      Snapshot.assert!(state.is_a?(Hash), "prober state must be a Hash")
+      @state = Snapshot.int_field(state, "state", EDetecting, ENotMe)
     end
 
     def filter_high_bit_only(aBuf)

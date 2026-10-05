@@ -143,5 +143,20 @@ module CharDet
       confidence = confidence * 0.5
       return confidence
     end
+
+    def snapshot_state
+      super.merge(
+        "last_char_class" => @lastCharClass,
+        "freq_counter" => @freqCounter.dup
+      )
+    end
+
+    def restore_state(state)
+      super
+      @lastCharClass = Snapshot.int_field(state, "last_char_class", 0, CLASS_NUM - 1)
+      @freqCounter = Snapshot.int_array(state, "freq_counter", FREQ_CAT_NUM, 0, (1 << 31) - 1)
+      # freq counter bucket 0 (illegal) is never incremented while detecting
+      Snapshot.assert!(@freqCounter[0].zero?, "illegal latin1 frequency bucket must be zero")
+    end
   end
 end

@@ -86,5 +86,48 @@ module CharDet
 
       return get_state()
     end
+
+    def snapshot_state
+      {
+        "state" => @state,
+        "active_sm" => @activeSM,
+        "detected_charset" => @detectedCharset,
+        "coding_state_machines" => @codingSM.map do |coding_sm|
+          entry = coding_sm.snapshot_state
+          entry.merge("active" => coding_sm.active)
+        end
+      }
+    end
+
+    def restore_state(state)
+      Snapshot.assert!(state.is_a?(Hash), "escape prober state must be a Hash")
+      @state = Snapshot.int_field(state, "state", EDetecting, EFoundIt)
+      detected = state["detected_charset"]
+      Snapshot.assert!(detected.nil? || Snapshot::SM_MODEL_NAMES.include?(detected),
+        "escape prober detected charset is not a known escape charset")
+      machines = state["coding_state_machines"]
+      Snapshot.assert!(machines.is_a?(Array) && machines.length == @codingSM.length,
+        "escape prober needs #{@codingSM.length} coding state machines")
+      active_count = 0
+      machines.each_with_index do |entry, index|
+        Snapshot.assert!(entry.is_a?(Hash), "coding state machine #{index} must be an object")
+        active = Snapshot.bool_field(entry, "active")
+        @codingSM[index].restore_state(entry, active)
+        @codingSM[index].active = active
+        active_count += 1 if active
+      end
+      @activeSM = Snapshot.int_field(state, "active_sm", 0, @codingSM.length)
+      Snapshot.assert!(@activeSM == active_count,
+        "active_sm #{@activeSM} does not match active coding state machines (#{active_count})")
+      if @state == EFoundIt
+        Snapshot.assert!(!detected.nil?, "found escape state requires a detected charset")
+        found_machine = @codingSM.find { |machine| machine.get_coding_state_machine == detected }
+        Snapshot.assert!(found_machine && found_machine.active,
+          "detected escape charset does not match an active coding state machine")
+      else
+        Snapshot.assert!(detected.nil?, "detected charset must be nil while detecting")
+      end
+      @detectedCharset = detected
+    end
   end
 end

@@ -81,5 +81,19 @@ module CharDet
         return unlike
       end
     end
+
+    def snapshot_state
+      super.merge(
+        "coding_state_machine" => @codingSM.snapshot_state,
+        "num_mb_char" => @numOfMBChar
+      )
+    end
+
+    def restore_state(state)
+      super
+      coding_active = state.key?("active") ? Snapshot.bool_field(state, "active") : true
+      @codingSM.restore_state(Snapshot.hash_field(state, "coding_state_machine"), coding_active)
+      @numOfMBChar = Snapshot.int_field(state, "num_mb_char", 0, (1 << 31) - 1)
+    end
   end
 end

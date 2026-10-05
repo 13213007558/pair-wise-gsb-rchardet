@@ -106,5 +106,68 @@ module CharDet
       return 0.0 unless @bestGuessProber
       return bestConf
     end
+
+    def feed_first_highbyte(aBuf, high_index, filtered_prefix, prefix_ends_raw_letter)
+      for prober in @probers
+        next unless prober
+        next unless prober.active
+        st = prober.feed_first_highbyte(aBuf, high_index, filtered_prefix,
+          prefix_ends_raw_letter)
+        next unless st
+        if st == EFoundIt
+          @bestGuessProber = prober
+          return get_state()
+        elsif st == ENotMe
+          prober.active = false
+          @activeNum -= 1
+          if @activeNum <= 0
+            @state = ENotMe
+            return get_state()
+          end
+        end
+      end
+      return get_state()
+    end
+
+    def snapshot_state
+      {
+        "state" => @state,
+        "active_num" => @activeNum,
+        "probers" => @probers.each_with_index.map do |prober, index|
+          next nil unless prober
+          prober.snapshot_state.merge("index" => index, "active" => prober.active != false)
+        end
+      }
+    end
+
+    def restore_state(state)
+      Snapshot.assert!(state.is_a?(Hash), "group prober state must be a Hash")
+      @state = Snapshot.int_field(state, "state", EDetecting, ENotMe)
+      active_num = Snapshot.int_field(state, "active_num", 0, @probers.length)
+      entries = state["probers"]
+      Snapshot.assert!(entries.is_a?(Array) && entries.length == @probers.length,
+        "group prober list must contain #{@probers.length} entries")
+      seen_active = 0
+      entries.each_with_index do |entry, index|
+        prober = @probers[index]
+        if entry.nil?
+          Snapshot.assert!(prober.nil?, "unexpected prober at index #{index}")
+          next
+        end
+        Snapshot.assert!(prober, "unexpected prober entry at index #{index}")
+        Snapshot.assert!(entry.is_a?(Hash), "prober entry #{index} must be an object")
+        Snapshot.assert!(entry["index"] == index,
+          "prober entry index #{entry["index"].inspect} does not match position #{index}")
+        active = Snapshot.bool_field(entry, "active")
+        prober.restore_state(entry)
+        prober.active = active
+        seen_active += 1 if active
+      end
+      Snapshot.assert!(seen_active == active_num,
+        "group prober active_num #{active_num} does not match active probers (#{seen_active})")
+      Snapshot.assert!(@state != ENotMe || seen_active.zero?,
+        "group prober not-me state requires no active probers")
+      @bestGuessProber = nil
+    end
   end
 end

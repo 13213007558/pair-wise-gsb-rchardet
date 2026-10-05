@@ -122,6 +122,58 @@ module CharDet
       end
     end
 
+    def snapshot_state
+      {
+        "state" => @state,
+        "position" => @position,
+        "zeros_at_mod" => @zeros_at_mod.dup,
+        "nonzeros_at_mod" => @nonzeros_at_mod.dup,
+        "quad" => @quad.dup,
+        "invalid_utf16be" => @invalid_utf16be,
+        "invalid_utf16le" => @invalid_utf16le,
+        "invalid_utf32be" => @invalid_utf32be,
+        "invalid_utf32le" => @invalid_utf32le,
+        "surrogate_16be" => @first_half_surrogate_pair_detected_16be,
+        "surrogate_16le" => @first_half_surrogate_pair_detected_16le
+      }
+    end
+
+    def restore_state(state)
+      Snapshot.assert!(state.is_a?(Hash), "utf16/32 prober state must be a Hash")
+      @state = Snapshot.int_field(state, "state", EDetecting, ENotMe)
+      position = Snapshot.int_field(state, "position", 0, (1 << 31) - 1)
+      zeros = Snapshot.int_array(state, "zeros_at_mod", 4, 0, position)
+      nonzeros = Snapshot.int_array(state, "nonzeros_at_mod", 4, 0, position)
+      expected_per_mod = Array.new(4) { |index| position / 4 + (index < position % 4 ? 1 : 0) }
+      Snapshot.assert!(zeros.zip(nonzeros, expected_per_mod).all? { |z, n, total| z + n == total } &&
+                          zeros.inject(0, :+) + nonzeros.inject(0, :+) == position,
+        "utf16/32 zero/nonzero counters do not sum to position")
+      quad = Snapshot.int_array(state, "quad", 4, 0, 255)
+      prefix_length = position % 4
+      (0...prefix_length).each do |index|
+        if quad[index] == 0
+          Snapshot.assert!(zeros[index] > 0, "utf16/32 quad prefix is zero without zero counter")
+        else
+          Snapshot.assert!(nonzeros[index] > 0, "utf16/32 quad prefix is nonzero without nonzero counter")
+        end
+      end
+      @position = position
+      @zeros_at_mod = zeros
+      @nonzeros_at_mod = nonzeros
+      @quad = quad
+      @invalid_utf16be = Snapshot.bool_field(state, "invalid_utf16be")
+      @invalid_utf16le = Snapshot.bool_field(state, "invalid_utf16le")
+      @invalid_utf32be = Snapshot.bool_field(state, "invalid_utf32be")
+      @invalid_utf32le = Snapshot.bool_field(state, "invalid_utf32le")
+      @first_half_surrogate_pair_detected_16be = Snapshot.bool_field(state, "surrogate_16be")
+      @first_half_surrogate_pair_detected_16le = Snapshot.bool_field(state, "surrogate_16le")
+      if @state == EFoundIt
+        Snapshot.assert!(!@invalid_utf16be && !@invalid_utf16le &&
+                            !@invalid_utf32be && !@invalid_utf32le,
+          "utf16/32 found-it state must not have invalid counters")
+      end
+    end
+
     private
 
     def approx_32bit_chars

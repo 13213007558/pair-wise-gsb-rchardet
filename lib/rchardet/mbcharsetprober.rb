@@ -85,5 +85,23 @@ module CharDet
     def get_confidence
       return @distributionAnalyzer.get_confidence()
     end
+
+    def snapshot_state
+      super.merge(
+        "coding_state_machine" => @codingSM.snapshot_state,
+        "distribution" => @distributionAnalyzer.snapshot_state,
+        "last_char" => Snapshot.binary(@lastChar.dup)
+      )
+    end
+
+    def restore_state(state)
+      super
+      coding_active = state.key?("active") ? Snapshot.bool_field(state, "active") : true
+      @codingSM.restore_state(Snapshot.hash_field(state, "coding_state_machine"), coding_active)
+      @distributionAnalyzer.restore_state(Snapshot.hash_field(state, "distribution"))
+      last_char = Snapshot.binary_field(state, "last_char", 2)
+      Snapshot.assert!(last_char.bytesize == 2, "field last_char must be exactly 2 bytes")
+      @lastChar = last_char.dup
+    end
   end
 end

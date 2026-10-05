@@ -95,6 +95,23 @@ module CharDet
       # This allows multiple encodings of a language to share one frequency table.
       return -1
     end
+
+    def snapshot_state
+      {
+        "total_chars" => @totalChars,
+        "freq_chars" => @freqChars
+      }
+    end
+
+    def restore_state(state)
+      Snapshot.assert!(state.is_a?(Hash), "distribution analyzer state must be a Hash")
+      total = Snapshot.int_field(state, "total_chars", 0, (1 << 31) - 1)
+      freq = Snapshot.int_field(state, "freq_chars", 0, total)
+      Snapshot.assert!(freq <= @tableSize, "freq_chars exceeds the model table size")
+      @done = false
+      @totalChars = total
+      @freqChars = freq
+    end
   end
 
   class EUCTWDistributionAnalysis < CharDistributionAnalysis

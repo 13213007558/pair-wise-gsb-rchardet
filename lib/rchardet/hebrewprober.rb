@@ -285,5 +285,44 @@ module CharDet
       end
       return EDetecting
     end
+
+    # This prober's state is always derived from its two model probers, so
+    # it is never EFoundIt and @state is intentionally not persisted.
+    def snapshot_state
+      {
+        "state" => get_state(),
+        "final_char_logical_score" => @finalCharLogicalScore,
+        "final_char_visual_score" => @finalCharVisualScore,
+        "prev" => Snapshot.binary(hebrew_context(@prev)),
+        "before_prev" => Snapshot.binary(hebrew_context(@beforePrev))
+      }
+    end
+
+    def restore_state(state)
+      Snapshot.assert!(state.is_a?(Hash), "hebrew prober state must be a Hash")
+      prober_state = state["state"]
+      Snapshot.assert!([EDetecting, ENotMe].include?(prober_state),
+        "hebrew prober state must be detecting or not-me")
+      @finalCharLogicalScore = Snapshot.int_field(state, "final_char_logical_score", 0, (1 << 31) - 1)
+      @finalCharVisualScore = Snapshot.int_field(state, "final_char_visual_score", 0, (1 << 31) - 1)
+      @prev = hebrew_restore_context(state, "prev")
+      @beforePrev = hebrew_restore_context(state, "before_prev")
+    end
+
+    private
+
+    # A carried token is a word delimiter (space), a single byte (which may
+    # be a final/normal letter), or \x00 standing in for a longer high-byte
+    # token that can never itself be a final/normal letter.
+    def hebrew_context(token)
+      return token if token == ' ' || token.bytesize == 1
+      "\x00".b
+    end
+
+    def hebrew_restore_context(state, key)
+      value = Snapshot.binary_field(state, key, 1)
+      Snapshot.assert!(value.bytesize == 1, "field #{key.inspect} must be exactly 1 byte")
+      value
+    end
   end
 end

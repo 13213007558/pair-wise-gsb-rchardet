@@ -178,6 +178,36 @@ module CharDet
     def get_order(aStr)
       return -1, 1
     end
+
+    def snapshot_state
+      {
+        "total_rel" => @totalRel,
+        "rel_sample" => @relSample.dup,
+        "need_to_skip" => @needToSkipCharNum,
+        "last_char_order" => @lastCharOrder,
+        "done" => @done
+      }
+    end
+
+    def restore_state(state)
+      Snapshot.assert!(state.is_a?(Hash), "context analyzer state must be a Hash")
+      total = Snapshot.int_field(state, "total_rel", 0, MAX_REL_THRESHOLD + 1)
+      sample = Snapshot.int_array(state, "rel_sample", NUM_OF_CATEGORY, 0, (1 << 31) - 1)
+      Snapshot.assert!(sample.inject(0, :+) <= total,
+        "context rel_sample entries sum exceeds total_rel")
+      skip = Snapshot.int_field(state, "need_to_skip", 0, 3)
+      order = Snapshot.int_field(state, "last_char_order", -1, 255)
+      done = Snapshot.bool_field(state, "done")
+      Snapshot.assert!(done == (total > MAX_REL_THRESHOLD),
+        "context done flag does not match total_rel")
+      Snapshot.assert!(skip.zero? || order == -1,
+        "context last_char_order must be reset while skipping bytes")
+      @totalRel = total
+      @relSample = sample
+      @needToSkipCharNum = skip
+      @lastCharOrder = order
+      @done = done
+    end
   end
 
   class SJISContextAnalysis < JapaneseContextAnalysis

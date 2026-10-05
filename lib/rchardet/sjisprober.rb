@@ -84,5 +84,14 @@ module CharDet
       l = [@contextAnalyzer.get_confidence(), @distributionAnalyzer.get_confidence()]
       return l.max
     end
+
+    def snapshot_state
+      super.merge("context" => @contextAnalyzer.snapshot_state)
+    end
+
+    def restore_state(state)
+      super
+      @contextAnalyzer.restore_state(Snapshot.hash_field(state, "context"))
+    end
   end
 end
